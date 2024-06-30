@@ -113,100 +113,229 @@ app.get("/get-cookie", (req, res) => {
 app.listen(3000, () => console.log("Server running on port 3000"));
 ```
 
-Here's a summary of the key points from the lecture:
+### Summary: Using Cookies and Sessions in Node.js Applications
 
-1. Cookie Extraction:
+#### Rendering Views with `res.render()`
 
-   - The method shown for extracting cookies was complex.
-   - Third-party packages are available to simplify cookie handling.
+1. **Basic Usage**:
 
-2. Security Flaw:
+   ```javascript
+   res.render("viewName");
+   ```
 
-   - Cookies can be easily viewed and manipulated in browser developer tools.
-   - This allows users to potentially change their authentication status by editing cookie values.
+   - Renders the specified view template (e.g., "viewName") and sends the resulting HTML to the client.
 
-3. Cookie Manipulation Example:
+2. **Rendering Views with Data**:
 
-   - Changing the 'loggedIn' cookie value from 'true' to 'false' didn't log out the user initially.
-   - Adding a strict comparison (value === 'true') fixed this issue.
+   ```javascript
+   res.render("auth/login", {
+     path: "/login",
+     pageTitle: "Login",
+   });
+   ```
 
-4. Security Concerns:
+   - Renders the "login" template inside the "auth" directory.
+   - Passes an object containing data (`path`, `pageTitle`) to the view.
 
-   - Sensitive data should not be stored directly in cookies.
-   - Users can easily edit cookie values, compromising security.
+3. **Redirecting to Another Page**:
+   ```javascript
+   res.redirect("/");
+   ```
+   - Redirects the client to the home page.
 
-5. Use Cases for Cookies:
+#### Working with Cookies
 
-   - Cookies are useful for storing non-sensitive data across requests.
-   - They're often used for user tracking and advertising purposes.
+1. **Purpose of Cookies**:
 
-6. Sessions as an Alternative:
+   - Store small pieces of data in the user's browser.
+   - Persist data across multiple requests and browser sessions.
 
-   - Sessions are introduced as a potential solution to the security issues with cookies.
+2. **Setting a Cookie**:
 
-7. Additional Cookie Configuration:
+   ```javascript
+   res.setHeader("Set-Cookie", "loggedIn=true");
+   ```
 
-   - There are other fields that can be configured for cookies to enhance their functionality and security.
+   - Sets a cookie with a key-value pair. The cookie is sent with the response and stored in the user's browser.
 
-8. Upcoming Topics:
-   - The lecture will explore scenarios where cookies are appropriate and where they're not.
-   - It will also delve into sessions as a more secure alternative for certain use cases.
+3. **Retrieving Cookie Data**:
 
-## This summary highlights the main points about the limitations of cookies for storing sensitive information and sets the stage for discussing more secure alternatives like sessions.
+   ```javascript
+   const cookie = req.get("Cookie");
+   console.log(cookie); // Outputs: loggedIn=true
+   ```
 
-Here is a summary of the key points from the lecture in simple English:
+   - Reads the cookie from the request headers.
 
-1. Cookie Extraction: Extracting cookies can be complex, but there are third-party packages available to make it easier.
+4. **Cookie Benefits**:
 
-2. Security Flaw: Cookies can be viewed and changed easily in browser tools, which could let users manipulate their authentication status.
+   - **Persistence**: Data stored in cookies is sent with each request, allowing the server to maintain state across requests.
+   - **User-Specific**: Each user has their own set of cookies, preventing data leakage between users.
 
-3. Cookie Manipulation Example: Changing a cookie value may not log out the user properly, but using strict comparisons can fix this issue.
+5. **Security Concerns**:
+   - **Visibility and Modifiability**: Cookies are stored client-side and can be easily viewed and modified by users.
+   - **Sensitive Data**: Storing sensitive information directly in cookies is risky without encryption or signing, as users can tamper with the data.
+   - **Example Risk**: A user could change the 'loggedIn' cookie value to 'true' to appear authenticated without actually logging in.
 
-4. Security Concerns: Sensitive data should not be stored directly in cookies because users can change them easily, putting security at risk.
+#### Enhancing Cookie Security
 
-5. Use Cases for Cookies: Cookies are good for storing non-sensitive data, like tracking users and showing ads.
+1. **Use Secure Cookies**:
 
-6. Sessions as an Alternative: Sessions are suggested as a more secure way to manage user information instead of cookies.
+   ```javascript
+   res.cookie("loggedIn", "true", {
+     maxAge: 3600000, // 1 hour
+     httpOnly: true, // Prevents access via JavaScript
+     secure: true, // Sends cookie only over HTTPS
+     sameSite: "strict", // Prevents CSRF
+   });
+   ```
 
-7. Additional Cookie Configuration: Cookies have other settings that can be adjusted to improve their security and functionality.
+   - `HttpOnly`: Protects against cross-site scripting (XSS) attacks by preventing JavaScript access.
+   - `Secure`: Ensures the cookie is only sent over HTTPS.
+   - `SameSite`: Mitigates cross-site request forgery (CSRF) attacks.
 
-8. Upcoming Topics: The lecture will cover when cookies are suitable and when they aren't, and it will explore sessions as a more secure choice for certain situations.
+2. **Avoid Storing Sensitive Data Directly**:
 
-This summary emphasizes that cookies are not ideal for storing sensitive data and introduces sessions as a safer alternative.
+   - Store only a session ID in the cookie, with the actual data stored server-side.
+
+3. **Example Implementation**:
+
+   ```javascript
+   const express = require("express");
+   const app = express();
+
+   // Set a cookie
+   app.get("/set-cookie", (req, res) => {
+     res.setHeader("Set-Cookie", "loggedIn=true; HttpOnly; Secure");
+     res.send("Cookie set");
+   });
+
+   // Read a cookie
+   app.get("/get-cookie", (req, res) => {
+     const cookie = req.get("Cookie");
+     console.log(cookie); // Outputs: loggedIn=true
+     res.send("Cookie value: " + cookie);
+   });
+
+   app.listen(3000, () => console.log("Server running on port 3000"));
+   ```
+
+#### Summary of Key Points
+
+1. **Cookies Overview**:
+
+   - Used for storing small amounts of data in the user's browser.
+   - Automatically sent with each request to the server.
+
+2. **Setting Cookies**:
+
+   - Use the `Set-Cookie` header to create cookies.
+
+3. **Reading Cookies**:
+
+   - Access cookies via the `Cookie` header in requests.
+
+4. **Security Measures**:
+
+   - Use `HttpOnly` and `Secure` flags to protect cookies.
+   - Store session IDs rather than sensitive data directly in cookies.
+
+5. **Limitations**:
+
+   - Cookies are limited in size (typically 4KB).
+   - Can be viewed and modified by users, posing security risks if not handled properly.
+
+6. **Using Sessions**:
+
+   - Sessions offer a more secure way to handle sensitive data by storing session information server-side and only storing session IDs in cookies.
+
+7. **Best Practices**:
+   - Use established packages for authentication and session management.
+   - Implement proper authentication and authorization checks on the server for protected routes.
+
+By understanding and implementing these principles, you can effectively manage user state and security in your Node.js applications using cookies and sessions.
 
 ---
 
-Here's a summary of the key points about cookies from this lecture:
+### Sessions Overview
 
-1. Tracking and Third-party Cookies:
+**Definition:**
+Sessions are a mechanism used by web servers to maintain stateful information about interactions with users across multiple requests.
 
-   - Cookies can be used for tracking users across different websites.
-   - Third-party cookies (e.g., from Google) can track user behavior across the web.
+**Key Points:**
 
-2. Cookie Configuration Options:
+1. **Purpose:**
 
-   - Expires: Sets an expiration date for the cookie.
-   - Max-Age: Sets the cookie's lifespan in seconds.
-   - Domain: Specifies which domain the cookie belongs to.
-   - Secure: Ensures the cookie is only sent over HTTPS.
-   - HttpOnly: Prevents access to the cookie via client-side JavaScript.
+   - Sessions enable websites to remember user-specific data and provide a personalized experience.
 
-3. Security Considerations:
+2. **Session ID:**
 
-   - HttpOnly flag helps protect against cross-site scripting (XSS) attacks.
-   - Secure flag ensures cookies are only transmitted over secure connections.
+   - Each session is identified by a unique session ID, stored as a cookie in the user's browser.
 
-4. Cookie Limitations:
+3. **Data Storage:**
 
-   - Users can still view and edit cookies in browser developer tools.
-   - Not suitable for storing sensitive information like authentication status.
+   - Session data is stored securely on the server, not on the user's browser like cookies.
 
-5. Use Cases:
+4. **Usage:**
 
-   - Good for non-sensitive data that needs to persist across requests.
-   - Useful for user tracking and analytics.
+   - Used for maintaining login status, shopping carts, and user preferences throughout a visit.
 
-6. Best Practices:
-   - Often, it's better to use established packages for tasks like authentication rather than manually setting cookies.
+5. **Security:**
 
-This summary highlights the versatility of cookies, their configuration options, security considerations, and sets the stage for discussing more secure alternatives like sessions for handling sensitive data.
+   - More secure than cookies for storing sensitive information, as data is not accessible or modifiable by users.
+
+6. **Expiration:**
+
+   - Sessions can expire after a period of inactivity or when the user logs out, ensuring data is not kept indefinitely.
+
+7. **Benefits:**
+
+   - Personalization, security, and efficiency in handling user-specific data.
+
+8. **Implementation:**
+
+   - Managed through session IDs stored in cookies, with session data stored securely on the server.
+
+9. **Considerations:**
+   - Proper session management is crucial for scalability and security.
+   - Users should be informed about session data handling to respect privacy preferences.
+
+### Practical Examples:
+
+- **Logging In:** Session remembers user login status across pages.
+- **Shopping Cart:** Items remain in the cart until checkout.
+- **Preferences:** User settings like language or theme persist throughout the visit.
+
+### Conclusion:
+
+Sessions play a critical role in providing a seamless and personalized user experience on websites, ensuring data security and efficient data management across interactions.
+
+This summary covers the essential aspects of sessions, their benefits, and considerations for future reference.
+
+###### express-session
+
+1.  Install: npm install express-session
+2.  Import: const session = require('express-session');
+3.  Set up express-session middleware in your App
+
+            ```javascript
+            app.use(
+            session({
+                secret: "your-secret-key", // Change this to a random string of your choice
+                resave: false,
+                saveUninitialized: false,
+                cookie: { secure: true }, // Use secure cookies in production with HTTPS
+            })
+            );
+
+```
+resave and saveUninitialized: These options determine how session data is stored and initialized.
+Setting them to false is generally recommended to prevent unnecessary session updates
+
+```
+
+```javascript
+set session: req.session.isLoggedIn = true;
+get session: req.session.isLoggedIn
+console.log(req.session.isLoggedIn )=> true
+```
