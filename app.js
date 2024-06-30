@@ -4,11 +4,21 @@ const express = require("express");
 const bodyParser = require("body-parser");
 const mongoose = require("mongoose");
 const session = require("express-session");
+//setup store
+const MongodbStore = require("connect-mongodb-session")(session);
 
 const errorController = require("./controllers/error");
 const User = require("./models/user");
 
+const MONGODB_URI =
+  "mongodb+srv://mongoose-practice:4ty6f8y7Vk8yOv0T@cluster0.2jgswxg.mongodb.net/myMongoose-db";
+
 const app = express();
+// 2
+const store = new MongodbStore({
+  uri: MONGODB_URI,
+  collection: "sessions",
+});
 
 app.set("view engine", "ejs");
 app.set("views", "views");
@@ -25,6 +35,7 @@ app.use(
     secret: "my-secret-key",
     resave: false,
     saveUninitialized: false,
+    store: store, //3
   })
 );
 
@@ -44,9 +55,7 @@ app.use(authRoutes);
 app.use(errorController.get404);
 
 mongoose
-  .connect(
-    "mongodb+srv://mongoose-practice:4ty6f8y7Vk8yOv0T@cluster0.2jgswxg.mongodb.net/myMongoose-db"
-  )
+  .connect(MONGODB_URI)
   .then((result) => {
     User.findOne().then((user) => {
       if (!user) {

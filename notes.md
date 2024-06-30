@@ -339,3 +339,115 @@ set session: req.session.isLoggedIn = true;
 get session: req.session.isLoggedIn
 console.log(req.session.isLoggedIn )=> true
 ```
+
+the problem here is this session is stored in memory and memory is not an infinite resource.
+for development, this is fine
+for a production server this would be horrible because if you have thousands
+or one hundred thousands of users, your memory will quickly overflow if you store all that information in memory
+it's also not ideal.
+
+use package: connect-mongodb-session is Node.js package that allows you to store session data in a MongoDB database
+It's used to store session information in MongoDB instead of in-memory storage.
+
+How it works:
+
+- It creates a new collection in your MongoDB database to store sessions.
+- Each session is stored as a document in this collection.
+- It automatically handles creating, reading, updating, and deleting session data in MongoDB.
+- You typically use it in conjunction with express-session, configuring it to use MongoDB as the session store.
+
+install: npm i --save connect-mongodb-session
+
+### Storing Sessions with MongoDB using `connect-mongodb-session`
+
+In production environments, storing sessions in memory is not feasible due to limited memory resources. Instead, sessions should be stored in a database. Here’s how to use `connect-mongodb-session` with `express-session` to store sessions in MongoDB:
+
+1. **Install Required Packages:**
+
+   - First, install the necessary packages:
+     ```bash
+     npm install express-session connect-mongodb-session mongoose
+     ```
+
+2. **Set Up MongoDB Connection:**
+
+   - Configure your MongoDB connection using Mongoose:
+
+     ```javascript
+     const mongoose = require("mongoose");
+
+     mongoose.connect("mongodb://localhost/shop", {
+       useNewUrlParser: true,
+       useUnifiedTopology: true,
+       useCreateIndex: true,
+       useFindAndModify: false,
+     });
+
+     const db = mongoose.connection;
+
+     db.on("error", console.error.bind(console, "MongoDB connection error:"));
+     db.once("open", () => {
+       console.log("Connected to MongoDB");
+     });
+     ```
+
+3. **Configure `connect-mongodb-session`:**
+
+   - Set up the MongoDB URI and create a new instance of `MongoStore`:
+
+     ```javascript
+     const session = require("express-session");
+     const MongoStore = require("connect-mongodb-session")(session);
+
+     const mongodbURI = "mongodb://localhost/shop"; // Your MongoDB URI
+
+     const store = new MongoStore({
+       uri: mongodbURI,
+       collection: "sessions", // The collection name where sessions will be stored
+     });
+     ```
+
+4. **Configure `express-session`:**
+
+   - Use `express-session` middleware with the configured `MongoStore`:
+
+     ```javascript
+     const express = require("express");
+     const app = express();
+
+     app.use(
+       session({
+         secret: "your-secret-key", // Change this to a random string
+         resave: false,
+         saveUninitialized: false,
+         store: store, // Use MongoDB store for sessions
+         cookie: {
+           maxAge: 1000 * 60 * 60 * 24, // Session expiration time in milliseconds (optional)
+         },
+       })
+     );
+
+     app.listen(3000, () => {
+       console.log("Server running on port 3000");
+     });
+     ```
+
+5. **Verify Session Storage:**
+   - Verify that sessions are stored in MongoDB using tools like MongoDB Compass. Check the `shop` database and the `sessions` collection to see stored sessions.
+
+### Benefits of Using MongoDB for Session Storage
+
+- **Scalability:** Sessions are stored in the database, making it suitable for handling thousands or even hundreds of thousands of users without running into memory limits.
+- **Persistence:** Session data persists across server restarts.
+- **Security:** Data stored server-side in the database is less vulnerable to tampering compared to client-side storage.
+- **Isolation:** Each user’s session data is stored separately, ensuring that user-specific data is not shared across users.
+
+### Best Practices
+
+- **Use a Secure Session Store:** Always use a secure and scalable store like MongoDB for session management in production environments.
+- **Set Appropriate Expiry:** Configure session expiry to clean up old sessions and manage storage efficiently.
+- **Handle Session Data Securely:** Avoid storing sensitive data directly in cookies; use sessions for such data and store them securely on the server.
+
+### Summary
+
+By using `connect-mongodb-session` with `express-session`, you can efficiently manage session storage in a scalable and secure manner suitable for production environments. This approach leverages MongoDB to handle large volumes of session data while ensuring data persistence and user isolation.
