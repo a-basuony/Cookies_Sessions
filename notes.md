@@ -451,3 +451,13 @@ In production environments, storing sessions in memory is not feasible due to li
 ### Summary
 
 By using `connect-mongodb-session` with `express-session`, you can efficiently manage session storage in a scalable and secure manner suitable for production environments. This approach leverages MongoDB to handle large volumes of session data while ensuring data persistence and user isolation.
+
+---
+
+fetch user when do login => fake the process
+User.findById("5bab316ce0a7c75f783cb8a8")
+.then((user) => {
+req.user = user;
+next();
+})
+.catch((err) => console.log(err));
